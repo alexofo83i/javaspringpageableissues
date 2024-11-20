@@ -1,4 +1,4 @@
-package ru.fedorov.querytest;
+package ru.fedorov.querytest.config;
 
 import java.util.Properties;
 

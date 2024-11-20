@@ -1,4 +1,4 @@
-package ru.fedorov.querytest;
+package ru.fedorov.querytest.service;
 
 import java.util.List;
 

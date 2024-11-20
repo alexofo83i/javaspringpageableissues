@@ -12,6 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import lombok.extern.slf4j.Slf4j;
+import ru.fedorov.querytest.entity.MyEntity;
+import ru.fedorov.querytest.repository.MyQueryRepository;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;

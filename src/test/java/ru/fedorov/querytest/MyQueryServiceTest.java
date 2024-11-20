@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import lombok.extern.slf4j.Slf4j;
+import ru.fedorov.querytest.entity.MyEntity;
+import ru.fedorov.querytest.entity.MyEntityPaging;
+import ru.fedorov.querytest.service.MyQueryService;
 
 @SpringBootTest
 @Slf4j
@@ -24,7 +27,7 @@ class MyQueryServiceTest {
 		List<MyEntity> result = testQueryService.getList(queryText, MyEntity.class);
 		MyEntity obj = result.iterator().next();
 		assertNotNull(obj);
-		assertNotNull(obj.name);
+		assertNotNull(obj.getName());
 		MyEntity obj2 = result.iterator().next();
 		assertEquals(obj, obj2);
 	}
@@ -35,7 +38,7 @@ class MyQueryServiceTest {
 		List<MyEntity> result = testQueryService.getList(queryText, MyEntity.class);
 		MyEntity obj = result.iterator().next();
 		assertNotNull(obj);
-		assertNotNull(obj.name);
+		assertNotNull(obj.getName());
 		MyEntity obj2 = result.iterator().next();
 		assertEquals(obj, obj2);
 	}
@@ -47,7 +50,7 @@ class MyQueryServiceTest {
 		List<MyEntityPaging> result = testQueryService.getListExtended(queryText, MyEntityPaging.class);
 		MyEntityPaging obj = result.iterator().next();
 		assertNotNull(obj);
-		assertNotNull(obj.name);
-		assertNotNull(obj.total_cnt);
+		assertNotNull(obj.getName());
+		assertNotNull(obj.getTotal_cnt());
 	}
 }

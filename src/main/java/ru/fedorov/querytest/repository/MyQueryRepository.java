@@ -1,11 +1,12 @@
-package ru.fedorov.querytest;
+package ru.fedorov.querytest.repository;
 
-import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
+
+import ru.fedorov.querytest.entity.MyEntity;
 
 public interface MyQueryRepository extends PagingAndSortingRepository<MyEntity, Long>
                                            , CrudRepository<MyEntity, Long> {
