@@ -7,6 +7,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import lombok.extern.slf4j.Slf4j;
 import ru.fedorov.querytest.entity.MyEntity;
@@ -52,5 +54,15 @@ class MyQueryServiceTest {
 		assertNotNull(obj);
 		assertNotNull(obj.getName());
 		assertNotNull(obj.getTotal_cnt());
+	}
+
+	@Test
+	void testSimpleCountQueryEntityPagingContainer() {
+		Pageable pageable = Pageable.ofSize(100).withPage(10);
+		String queryText = "select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.name limit " + pageable.getPageSize() + " offset " + pageable.getOffset();
+		Page<MyEntity> result = testQueryService.<MyEntity>getListContainer(queryText, pageable, MyEntity.class);
+		MyEntity obj = result.iterator().next();
+		assertNotNull(obj);
+		assertNotNull(obj.getName());
 	}
 }
