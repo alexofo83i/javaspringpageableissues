@@ -14,9 +14,7 @@ public class JacksonObjectMapperConfiguration {
             var mapper = new ObjectMapper();
             SimpleFilterProvider simpleFilterProvider = new SimpleFilterProvider().setFailOnUnknownId(false);
             mapper.setFilterProvider(simpleFilterProvider);
-    
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    
             return mapper;
         }
     }

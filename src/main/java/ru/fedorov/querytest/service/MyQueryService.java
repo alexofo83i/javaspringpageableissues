@@ -40,7 +40,20 @@ public class MyQueryService {
 		List<T> result = list.stream()
 						.map(x-> objectMapper.convertValue(x, clazz))
 						.toList();
-		Long totalCnt = (Long) list.iterator().next().get("total_cnt");
+		Long totalCnt = (Long) list.get(0).get("total_cnt");
+		return new PageImpl<>(result, pageable, totalCnt);
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T> Page<T> getPageByNumberUsingMapper(Pageable pageable, Class<T> clazz){
+		String QUERY_TEXT = "select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.name limit " + pageable.getPageSize() + " offset " + pageable.getOffset();
+		Query query = entityManager.createNativeQuery(QUERY_TEXT,Map.class);
+		List<Map<String, Object>> list = query.getResultList();
+		List<T> result = list.stream()
+						.map(x-> objectMapper.convertValue(x, clazz))
+						.toList();
+		Map<String,Object> resultMap0 = list.get(0);						
+		long totalCnt =  (resultMap0 != null)? (long) resultMap0.get("total_cnt") : 0L;
 		return new PageImpl<>(result, pageable, totalCnt);
 	}
 }
