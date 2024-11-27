@@ -17,24 +17,39 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import lombok.extern.slf4j.Slf4j;
 import ru.fedorov.querytest.entity.MyEntity;
 import ru.fedorov.querytest.service.MyQueryService;
 
 @SpringBootTest
+@Slf4j
 public class MyQueryServiceBenchmarkTest {
 
-    public static MyQueryService testQueryService;
+    // public static MyQueryService testQueryService;
+
+    // @Autowired
+    // void setService(MyQueryService testQueryService){
+    //     MyQueryServiceBenchmarkTest.testQueryService = testQueryService;   
+    // }
+
+    private static ApplicationContext applicationContext;
 
     @Autowired
-    void setService(MyQueryService testQueryService){
-        MyQueryServiceBenchmarkTest.testQueryService = testQueryService;   
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        MyQueryServiceBenchmarkTest.applicationContext = applicationContext;
+    }
+
+    public static ApplicationContext getApplicationContext() {
+        return applicationContext;
     }
    
 
@@ -52,7 +67,7 @@ public class MyQueryServiceBenchmarkTest {
                 .warmupIterations(2)
                 .measurementTime(TimeValue.seconds(10))
                 .measurementIterations(2)
-                .threads(1)
+                .threads(10)
                 .forks(0)
                 .shouldFailOnError(true)
                 .shouldDoGC(true)
@@ -69,12 +84,18 @@ public class MyQueryServiceBenchmarkTest {
     @State (Scope.Thread)
     public static class BenchmarkState
     {
+        MyQueryService testQueryService;
         // List<Integer> list;
 
-        static int MAX_COUNT_OF_ROWS = 1000;
-        static int PAGE_SIZE = 100;
+        static int MAX_COUNT_OF_ROWS = 100;
+        static int PAGE_SIZE = 20;
         static int PAGES_COUNT = (int)(MAX_COUNT_OF_ROWS/PAGE_SIZE)-1;
         
+        @Setup(Level.Trial)
+        public void initializeBean(){
+            testQueryService = MyQueryServiceBenchmarkTest.getApplicationContext().getBean(MyQueryService.class);
+            log.info("MyQueryService " + testQueryService.toString() + " is initialized in thread " + Thread.currentThread().toString());
+        }
 
         //   @Setup (Level.Trial) 
         //   public void initialize() {
@@ -85,7 +106,7 @@ public class MyQueryServiceBenchmarkTest {
         //     }
     }
 
-    @Benchmark 
+    @Benchmark
     public void benchmarkGetPageByNumberUsingMapper (BenchmarkState state, Blackhole bh) {
 
         // List<Integer> list = state.list;
@@ -93,7 +114,7 @@ public class MyQueryServiceBenchmarkTest {
         for (int iPageNumber = 0; iPageNumber < BenchmarkState.PAGES_COUNT; iPageNumber++){
 
             Pageable pageable = Pageable.ofSize(BenchmarkState.PAGE_SIZE).withPage(iPageNumber);
-            bh.consume ( testQueryService.<MyEntity>getPageByNumberUsingMapper(pageable, MyEntity.class) );
+            bh.consume ( state.testQueryService.<MyEntity>getPageByNumberUsingMapper(pageable, MyEntity.class) );
         }
     }
 }

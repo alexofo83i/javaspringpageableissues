@@ -44,10 +44,13 @@ public class MyQueryService {
 		return new PageImpl<>(result, pageable, totalCnt);
 	}
 
+	static final String QUERY_TEXT_COUNT_OVER_ORDERBY_NAME_LIMIT_OFFSET = "select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.name limit $1 offset $2";
 	@SuppressWarnings("unchecked")
 	public <T> Page<T> getPageByNumberUsingMapper(Pageable pageable, Class<T> clazz){
-		String QUERY_TEXT = "select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.name limit " + pageable.getPageSize() + " offset " + pageable.getOffset();
-		Query query = entityManager.createNativeQuery(QUERY_TEXT,Map.class);
+		String queryText = QUERY_TEXT_COUNT_OVER_ORDERBY_NAME_LIMIT_OFFSET
+							.replace("$1", String.valueOf( pageable.getPageSize()))
+							.replace("$2", String.valueOf( pageable.getOffset()));
+		Query query = entityManager.createNativeQuery(queryText,Map.class);
 		List<Map<String, Object>> list = query.getResultList();
 		List<T> result = list.stream()
 						.map(x-> objectMapper.convertValue(x, clazz))
