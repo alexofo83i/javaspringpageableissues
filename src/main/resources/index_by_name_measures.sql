@@ -19,8 +19,8 @@ select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.n
 --Planning Time: 0.671 ms                                                                     |
 --Execution Time: 1048.490 ms                                                                 |
 
-drop index testentity_name_idx;
-create index testentity_name_idx on testentity using btree (name);
+drop index testentity_name_simple_idx;
+create index testentity_name_simple_idx on testentity using btree (name);
 
 explain (analyze, buffers, costs off) execute query(10,1000);
 deallocate query;
@@ -33,15 +33,15 @@ select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.n
 --  Buffers: shared hit=999846 read=4929, temp read=3959 written=4151                                               |
 --  ->  WindowAgg (actual time=1158.139..1158.315 rows=1010 loops=1)                                                |
 --        Buffers: shared hit=999846 read=4929, temp read=3959 written=4151                                         |
---        ->  Index Scan using testentity_name_idx on testentity t (actual time=0.025..876.162 rows=1000000 loops=1)|
+--        ->  Index Scan using testentity_name_simple_idx on testentity t (actual time=0.025..876.162 rows=1000000 loops=1)|
 --              Buffers: shared hit=999846 read=4929                                                                |
 --Planning:                                                                                                         |
 --  Buffers: shared hit=16 read=1                                                                                   |
 --Planning Time: 0.373 ms                                                                                           |
 --Execution Time: 1169.343 ms                                                                                       |
 
-drop index testentity_name_idx;
-create index testentity_name_idx on testentity using btree (name, id);
+drop index testentity_name_id_idx;
+create index testentity_name_id_idx on testentity using btree (name, id);
 
 explain (analyze, buffers, costs off) execute query(10,1000);
 deallocate query;
@@ -55,14 +55,14 @@ select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.n
 --  Buffers: shared hit=5095, temp read=3959 written=4151                                                                |
 --  ->  WindowAgg (actual time=606.728..606.886 rows=1010 loops=1)                                                       |
 --        Buffers: shared hit=5095, temp read=3959 written=4151                                                          |
---        ->  Index Only Scan using testentity_name_idx on testentity t (actual time=0.042..246.234 rows=1000000 loops=1)|
+--        ->  Index Only Scan using testentity_name_id_idx on testentity t (actual time=0.042..246.234 rows=1000000 loops=1)|
 --              Heap Fetches: 314                                                                                        |
 --              Buffers: shared hit=5095                                                                                 |
 --Planning Time: 0.139 ms                                                                                                |
 --Execution Time: 616.400 ms                                                                                             |
 
-drop index testentity_name_idx;
-create index testentity_name_idx on testentity using btree (name) include ( id);
+drop index testentity_name_include_id_idx;
+create index testentity_name_include_id_idx on testentity using btree (name) include ( id);
 
 explain (analyze, buffers, costs off) execute query(10,1000);
 deallocate query;
@@ -75,10 +75,36 @@ select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.n
 --  Buffers: shared hit=166 read=4929, temp read=3959 written=4151                                                       |
 --  ->  WindowAgg (actual time=331.069..331.201 rows=1010 loops=1)                                                       |
 --        Buffers: shared hit=166 read=4929, temp read=3959 written=4151                                                 |
---        ->  Index Only Scan using testentity_name_idx on testentity t (actual time=0.029..117.762 rows=1000000 loops=1)|
+--        ->  Index Only Scan using testentity_name_include_id_idx on testentity t (actual time=0.029..117.762 rows=1000000 loops=1)|
 --              Heap Fetches: 314                                                                                        |
 --              Buffers: shared hit=166 read=4929                                                                        |
 --Planning:                                                                                                              |
 --  Buffers: shared hit=19 read=1                                                                                        |
 --Planning Time: 0.326 ms                                                                                                |
 --Execution Time: 338.139 ms                                                                                             |
+
+    
+SELECT  pgi.tablename
+      , pgi.indexname
+      , pi.indisvalid
+      , pg_size_pretty( pg_relation_size( pi.indexrelid )) as indexsize
+      , pgi.indexdef
+FROM
+    pg_indexes pgi
+   , pg_index pi
+   , pg_class pc
+WHERE
+     pgi.schemaname = 'public'  
+and pgi.tablename = 'testentity'
+--and pi.indisvalid = false 
+and pi.indexrelid = pc.oid
+and pgi.indexname = pc.relname 
+ORDER BY
+    pgi.tablename,
+    pgi.indexname;    |
+
+tablename |indexname                     |indisvalid|indexsize|indexdef                                                                                        |
+----------+------------------------------+----------+---------+------------------------------------------------------------------------------------------------+
+testentity|testentity_name_id_idx        |true      |39 MB    |CREATE INDEX testentity_name_id_idx ON public.testentity USING btree (name, id)                 |
+testentity|testentity_name_include_id_idx|true      |39 MB    |CREATE INDEX testentity_name_include_id_idx ON public.testentity USING btree (name) INCLUDE (id)|
+testentity|testentity_name_simple_idx    |true      |39 MB    |CREATE INDEX testentity_name_simple_idx ON public.testentity USING btree (name)                 |    
