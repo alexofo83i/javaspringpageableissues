@@ -66,13 +66,14 @@ class MyQueryServiceTest {
 		assertNotNull(obj.getName());
 	}
 
-	// @Test
-	// void testSimpleCountQueryEntityPagingContainerGet0() {
-	// 	Pageable pageable = Pageable.ofSize(100).withPage(10);
-	// 	String queryText = "select t.id, t.name, count(*) over() as total_cnt from testentity t where 1=0 order by t.name limit " + pageable.getPageSize() + " offset " + pageable.getOffset();
-	// 	Page<MyEntity> result = testQueryService.<MyEntity>getListContainer(queryText, pageable, MyEntity.class);
-	// 	MyEntity obj = result.getContent().get(0);
-	// 	assertNotNull(obj);
-	// 	assertNotNull(obj.getName());
-	// }
+	@Test
+	void testGetPageByNumberUsingTransformer() {
+		Pageable pageable = Pageable.ofSize(100).withPage(10);
+		Page<MyEntity> result = testQueryService.<MyEntity>getPageByNumberUsingTransformer(pageable, ((Object[] x) -> {
+			return new MyEntity( Long.parseLong( x[1].toString() ), x[2].toString()); 
+		}));
+		MyEntity obj = result.getContent().get(0);
+		assertNotNull(obj);
+		assertNotNull(obj.getName());
+	}
 }

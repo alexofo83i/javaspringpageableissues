@@ -117,4 +117,18 @@ public class MyQueryServiceBenchmarkTest {
             bh.consume ( state.testQueryService.<MyEntity>getPageByNumberUsingMapper(pageable, MyEntity.class) );
         }
     }
+
+    @Benchmark
+    public void benchmarkGetPageByNumberUsingTransformer (BenchmarkState state, Blackhole bh) {
+
+        // List<Integer> list = state.list;
+
+        for (int iPageNumber = 0; iPageNumber < BenchmarkState.PAGES_COUNT; iPageNumber++){
+
+            Pageable pageable = Pageable.ofSize(BenchmarkState.PAGE_SIZE).withPage(iPageNumber);
+            bh.consume ( state.testQueryService.<MyEntity>getPageByNumberUsingTransformer(pageable, ((Object[] x) -> {
+                return new MyEntity( Long.parseLong( x[1].toString() ), x[2].toString()); 
+            })));
+        }
+    }
 }

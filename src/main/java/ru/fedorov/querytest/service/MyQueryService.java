@@ -2,6 +2,7 @@ package ru.fedorov.querytest.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -44,7 +45,7 @@ public class MyQueryService {
 		return new PageImpl<>(result, pageable, totalCnt);
 	}
 
-	static final String QUERY_TEXT_COUNT_OVER_ORDERBY_NAME_LIMIT_OFFSET = "select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.name limit $1 offset $2";
+	static final String QUERY_TEXT_COUNT_OVER_ORDERBY_NAME_LIMIT_OFFSET = "select count(*) over() as total_cnt, t.id, t.name from testentity t order by t.name limit $1 offset $2";
 	@SuppressWarnings("unchecked")
 	public <T> Page<T> getPageByNumberUsingMapper(Pageable pageable, Class<T> clazz){
 		String queryText = QUERY_TEXT_COUNT_OVER_ORDERBY_NAME_LIMIT_OFFSET
@@ -57,6 +58,26 @@ public class MyQueryService {
 						.toList();
 		Map<String,Object> resultMap0 = list.get(0);						
 		long totalCnt =  (resultMap0 != null)? (long) resultMap0.get("total_cnt") : 0L;
+		return new PageImpl<>(result, pageable, totalCnt);
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T> Page<T> getPageByNumberUsingTransformer(Pageable pageable, Function<Object[],T> transformer){
+		String queryText = QUERY_TEXT_COUNT_OVER_ORDERBY_NAME_LIMIT_OFFSET
+							.replace("$1", String.valueOf( pageable.getPageSize()))
+							.replace("$2", String.valueOf( pageable.getOffset()));
+		
+		Query query = entityManager
+					.createNativeQuery(queryText,Object[].class)
+					// .setFirstResult((int)pageable.getOffset())
+					// .setMaxResults(pageable.getPageSize())
+					;
+		List<Object[]> list = query.getResultList();
+		List<T> result = list.stream()
+						.map(transformer)
+						.toList();
+		Object[] tuple = list.get(0);						
+		long totalCnt =  (tuple != null)? (long) tuple[0] : 0L;
 		return new PageImpl<>(result, pageable, totalCnt);
 	}
 }
