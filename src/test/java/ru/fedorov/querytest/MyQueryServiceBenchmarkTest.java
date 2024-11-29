@@ -1,6 +1,7 @@
 package ru.fedorov.querytest;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -63,9 +65,9 @@ public class MyQueryServiceBenchmarkTest {
                 // Set the following options as needed
                 .mode (Mode.AverageTime)
                 .timeUnit(TimeUnit.MICROSECONDS)
-                .warmupTime(TimeValue.seconds(1))
+                .warmupTime(TimeValue.seconds(10))
                 .warmupIterations(2)
-                .measurementTime(TimeValue.seconds(10))
+                .measurementTime(TimeValue.seconds(30))
                 .measurementIterations(2)
                 .threads(10)
                 .forks(0)
@@ -85,49 +87,53 @@ public class MyQueryServiceBenchmarkTest {
     public static class BenchmarkState
     {
         MyQueryService testQueryService;
-        // List<Integer> list;
 
+        @Param( { queryCountOverLimitOffset
+                , queryLimitCountOverLimitOffset
+                }
+        )
+        String QUERY_TEXT_TEMPLATE;
+
+        static final String queryCountOverLimitOffset = "queryCountOverLimitOffset";
+        static final String queryLimitCountOverLimitOffset = "queryLimitCountOverLimitOffset";
         static int MAX_COUNT_OF_ROWS = 100;
         static int PAGE_SIZE = 20;
         static int PAGES_COUNT = (int)(MAX_COUNT_OF_ROWS/PAGE_SIZE)-1;
+        static HashMap<String,String> queriesMap;
+
+        static {
+            queriesMap = new HashMap<>();
+            queriesMap.put(queryCountOverLimitOffset, "select count(*) over() as total_cnt, t.id, t.name from testentity t order by t.name");
+            queriesMap.put(queryLimitCountOverLimitOffset, "with t_limited as (select  tt.id, tt.name from testentity tt order by tt.name LIMIT 10000 ) select  count(*) over() as total_cnt, t.id, t.name from t_limited t");
+        }
+
+        public String getQueryTextTemplate(){
+            return queriesMap.get(QUERY_TEXT_TEMPLATE);
+        }
         
         @Setup(Level.Trial)
         public void initializeBean(){
             testQueryService = MyQueryServiceBenchmarkTest.getApplicationContext().getBean(MyQueryService.class);
             log.info("MyQueryService " + testQueryService.toString() + " is initialized in thread " + Thread.currentThread().toString());
         }
-
-        //   @Setup (Level.Trial) 
-        //   public void initialize() {
-
-        //         list = new ArrayList<>(PAGES_COUNT);
-        //         for (int i = 0; i < PAGES_COUNT; i++)
-        //             list.add (i*PAGE_SIZE);
-        //     }
     }
 
     @Benchmark
     public void benchmarkGetPageByNumberUsingMapper (BenchmarkState state, Blackhole bh) {
-
-        // List<Integer> list = state.list;
-
+        String queryTextTemplate = state.getQueryTextTemplate();
         for (int iPageNumber = 0; iPageNumber < BenchmarkState.PAGES_COUNT; iPageNumber++){
-
             Pageable pageable = Pageable.ofSize(BenchmarkState.PAGE_SIZE).withPage(iPageNumber);
-            bh.consume ( state.testQueryService.<MyEntity>getPageByNumberUsingMapper(pageable, MyEntity.class) );
+            bh.consume ( state.testQueryService.<MyEntity>getPageByNumberUsingMapper(queryTextTemplate, pageable, MyEntity.class) );
         }
     }
 
     @Benchmark
     public void benchmarkGetPageByNumberUsingTransformer (BenchmarkState state, Blackhole bh) {
-
-        // List<Integer> list = state.list;
-
+        String queryTextTemplate = state.getQueryTextTemplate();
         for (int iPageNumber = 0; iPageNumber < BenchmarkState.PAGES_COUNT; iPageNumber++){
-
             Pageable pageable = Pageable.ofSize(BenchmarkState.PAGE_SIZE).withPage(iPageNumber);
-            bh.consume ( state.testQueryService.<MyEntity>getPageByNumberUsingTransformer(pageable, ((Object[] x) -> {
-                return new MyEntity( Long.parseLong( x[1].toString() ), x[2].toString()); 
+            bh.consume ( state.testQueryService.<MyEntity>getPageByNumberUsingTransformer(queryTextTemplate, pageable, ((Object[] x) -> {
+                return new MyEntity( ((Integer) x[1] ).longValue(), (String) x[2]);
             })));
         }
     }

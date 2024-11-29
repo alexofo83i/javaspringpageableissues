@@ -108,3 +108,28 @@ tablename |indexname                     |indisvalid|indexsize|indexdef         
 testentity|testentity_name_id_idx        |true      |39 MB    |CREATE INDEX testentity_name_id_idx ON public.testentity USING btree (name, id)                 |
 testentity|testentity_name_include_id_idx|true      |39 MB    |CREATE INDEX testentity_name_include_id_idx ON public.testentity USING btree (name) INCLUDE (id)|
 testentity|testentity_name_simple_idx    |true      |39 MB    |CREATE INDEX testentity_name_simple_idx ON public.testentity USING btree (name)                 |    
+
+
+
+explain ( analyze, buffers, costs off)
+with t_limited as ( 
+	select  tt.id, tt.name 
+	  from testentity tt 
+	 order by tt.name LIMIT 10000 )
+select  count(*) over() as total_cnt, t.id, t.name 
+  from t_limited t 
+ offset 100 limit 10;
+
+ QUERY PLAN                                                                                                                           |
+-------------------------------------------------------------------------------------------------------------------------------------+
+Limit (actual time=4.874..4.879 rows=10 loops=1)                                                                                     |
+  Buffers: shared hit=54                                                                                                             |
+  ->  WindowAgg (actual time=4.842..4.871 rows=110 loops=1)                                                                          |
+        Buffers: shared hit=54                                                                                                       |
+        ->  Limit (actual time=0.025..2.524 rows=10000 loops=1)                                                                      |
+              Buffers: shared hit=54                                                                                                 |
+              ->  Index Only Scan using testentity_name_include_id_idx on testentity tt (actual time=0.025..1.709 rows=10000 loops=1)|
+                    Heap Fetches: 2                                                                                                  |
+                    Buffers: shared hit=54                                                                                           |
+Planning Time: 0.149 ms                                                                                                              |
+Execution Time: 5.164 ms                                                                                                             |

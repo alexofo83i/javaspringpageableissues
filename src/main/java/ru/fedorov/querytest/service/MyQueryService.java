@@ -45,13 +45,17 @@ public class MyQueryService {
 		return new PageImpl<>(result, pageable, totalCnt);
 	}
 
-	static final String QUERY_TEXT_COUNT_OVER_ORDERBY_NAME_LIMIT_OFFSET = "select count(*) over() as total_cnt, t.id, t.name from testentity t order by t.name limit $1 offset $2";
+	
 	@SuppressWarnings("unchecked")
-	public <T> Page<T> getPageByNumberUsingMapper(Pageable pageable, Class<T> clazz){
-		String queryText = QUERY_TEXT_COUNT_OVER_ORDERBY_NAME_LIMIT_OFFSET
-							.replace("$1", String.valueOf( pageable.getPageSize()))
-							.replace("$2", String.valueOf( pageable.getOffset()));
-		Query query = entityManager.createNativeQuery(queryText,Map.class);
+	public <T> Page<T> getPageByNumberUsingMapper(String queryTextTemplate, Pageable pageable, Class<T> clazz){
+		// String queryText = queryTextTemplate
+		// 					.replace("$1", String.valueOf( pageable.getPageSize()))
+		// 					.replace("$2", String.valueOf( pageable.getOffset()));
+		Query query = entityManager
+					.createNativeQuery(queryTextTemplate,Map.class)
+					.setFirstResult((int)pageable.getOffset())
+					.setMaxResults(pageable.getPageSize())
+					;
 		List<Map<String, Object>> list = query.getResultList();
 		List<T> result = list.stream()
 						.map(x-> objectMapper.convertValue(x, clazz))
@@ -62,22 +66,22 @@ public class MyQueryService {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> Page<T> getPageByNumberUsingTransformer(Pageable pageable, Function<Object[],T> transformer){
-		String queryText = QUERY_TEXT_COUNT_OVER_ORDERBY_NAME_LIMIT_OFFSET
-							.replace("$1", String.valueOf( pageable.getPageSize()))
-							.replace("$2", String.valueOf( pageable.getOffset()));
+	public <T> Page<T> getPageByNumberUsingTransformer(String queryTextTemplate, Pageable pageable, Function<Object[],T> transformer){
+		// String queryText = queryTextTemplate
+		// 					.replace("$1", String.valueOf( pageable.getPageSize()))
+		// 					.replace("$2", String.valueOf( pageable.getOffset()));
 		
 		Query query = entityManager
-					.createNativeQuery(queryText,Object[].class)
-					// .setFirstResult((int)pageable.getOffset())
-					// .setMaxResults(pageable.getPageSize())
+					.createNativeQuery(queryTextTemplate,Object[].class) //Object[].class)
+					.setFirstResult((int)pageable.getOffset())
+					.setMaxResults(pageable.getPageSize())
 					;
 		List<Object[]> list = query.getResultList();
 		List<T> result = list.stream()
 						.map(transformer)
 						.toList();
-		Object[] tuple = list.get(0);						
-		long totalCnt =  (tuple != null)? (long) tuple[0] : 0L;
+						Object[] tuple = list.get(0);						
+		long totalCnt =  (tuple != null)?  Long.parseLong(tuple[0].toString()) : 0L;
 		return new PageImpl<>(result, pageable, totalCnt);
 	}
 }

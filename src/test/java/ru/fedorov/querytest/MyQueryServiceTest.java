@@ -59,7 +59,7 @@ class MyQueryServiceTest {
 	@Test
 	void testSimpleCountQueryEntityPagingContainer() {
 		Pageable pageable = Pageable.ofSize(100).withPage(10);
-		String queryText = "select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.name limit " + pageable.getPageSize() + " offset " + pageable.getOffset();
+		String queryText = "select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.name";
 		Page<MyEntity> result = testQueryService.<MyEntity>getListContainer(queryText, pageable, MyEntity.class);
 		MyEntity obj = result.getContent().get(0);
 		assertNotNull(obj);
@@ -69,8 +69,9 @@ class MyQueryServiceTest {
 	@Test
 	void testGetPageByNumberUsingTransformer() {
 		Pageable pageable = Pageable.ofSize(100).withPage(10);
-		Page<MyEntity> result = testQueryService.<MyEntity>getPageByNumberUsingTransformer(pageable, ((Object[] x) -> {
-			return new MyEntity( Long.parseLong( x[1].toString() ), x[2].toString()); 
+		String queryTextTemplate = "select count(*) over() as total_cnt, t.id, t.name from testentity t order by t.name";
+		Page<MyEntity> result = testQueryService.<MyEntity>getPageByNumberUsingTransformer(queryTextTemplate, pageable, ((Object[] x) -> {
+			return new MyEntity( ((Integer) x[1] ).longValue(), (String) x[2]); 
 		}));
 		MyEntity obj = result.getContent().get(0);
 		assertNotNull(obj);
