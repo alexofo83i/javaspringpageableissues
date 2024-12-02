@@ -4,12 +4,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import jakarta.persistence.Query;
 import lombok.extern.slf4j.Slf4j;
 import ru.fedorov.querytest.entity.MyEntity;
 import ru.fedorov.querytest.entity.MyEntityPaging;
@@ -59,7 +64,7 @@ class MyQueryServiceTest {
 	@Test
 	void testSimpleCountQueryEntityPagingContainer() {
 		Pageable pageable = Pageable.ofSize(100).withPage(10);
-		String queryText = "select t.id, t.name, count(*) over() as total_cnt from testentity t order by t.name";
+		String queryText = "select count(*) over() as total_cnt, t.id, t.name from testentity t order by t.name";
 		Page<MyEntity> result = testQueryService.<MyEntity>getListContainer(queryText, pageable, MyEntity.class);
 		MyEntity obj = result.getContent().get(0);
 		assertNotNull(obj);
@@ -77,4 +82,5 @@ class MyQueryServiceTest {
 		assertNotNull(obj);
 		assertNotNull(obj.getName());
 	}
+
 }

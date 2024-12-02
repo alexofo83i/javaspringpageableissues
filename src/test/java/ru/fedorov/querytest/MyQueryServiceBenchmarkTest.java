@@ -36,13 +36,6 @@ import ru.fedorov.querytest.service.MyQueryService;
 @Slf4j
 public class MyQueryServiceBenchmarkTest {
 
-    // public static MyQueryService testQueryService;
-
-    // @Autowired
-    // void setService(MyQueryService testQueryService){
-    //     MyQueryServiceBenchmarkTest.testQueryService = testQueryService;   
-    // }
-
     private static ApplicationContext applicationContext;
 
     @Autowired
