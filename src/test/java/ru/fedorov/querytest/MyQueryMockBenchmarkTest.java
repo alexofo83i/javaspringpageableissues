@@ -11,6 +11,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.mockito.internal.creation.MockSettingsImpl;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
@@ -94,7 +96,7 @@ public class MyQueryMockBenchmarkTest {
             objectMapper = MyQueryMockBenchmarkTest.getApplicationContext().getBean(ObjectMapper.class);
             log.info("objectMapper " + objectMapper.toString() + " is initialized in thread " + Thread.currentThread().toString());
 
-            query = mock(Query.class);
+            query = mock(Query.class, Mockito.withSettings().stubOnly());
             List<Map<String, Object>> listStubs = new ArrayList<Map<String,Object>>(100);
             for( int i = 0; i < 100; i++){
                 Map<String,Object> map = new HashMap<>();
@@ -126,9 +128,9 @@ public class MyQueryMockBenchmarkTest {
         
         @Setup(Level.Trial)
         public void initializeBean(){
-            query = mock(Query.class);
+            query = mock(Query.class, Mockito.withSettings().stubOnly());
             List<Object[]> listStubs = new ArrayList<Object[]>(100);
-            for( int i = 0; i < 100; i++){
+            for( int i = 0; i < 100; i++){  
                 Object[] tuple = new Object[]{Long.valueOf(1000000L), Long.valueOf(i), UUID.randomUUID().toString()};
                 listStubs.add(tuple);
             }
