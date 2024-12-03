@@ -21,6 +21,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.domain.Page;
@@ -36,7 +37,7 @@ import ru.fedorov.querytest.service.MyQueryService;
 @Slf4j
 public class MyQueryServiceBenchmarkTest {
 
-    private static ApplicationContext applicationContext;
+    private static volatile ApplicationContext applicationContext;
 
     @Autowired
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -44,7 +45,16 @@ public class MyQueryServiceBenchmarkTest {
     }
 
     public static ApplicationContext getApplicationContext() {
-        return applicationContext;
+        // in case when forks > 0 @Autowired will not work
+        if(MyQueryServiceBenchmarkTest.applicationContext == null){ 
+            synchronized(MyQueryServiceBenchmarkTest.class){
+                if(MyQueryServiceBenchmarkTest.applicationContext == null){ 
+                    ApplicationContext context = new SpringApplication(MyQueryApplication.class).run();
+                    MyQueryServiceBenchmarkTest.applicationContext = context;
+                }
+            }
+        }
+        return MyQueryServiceBenchmarkTest.applicationContext;
     }
    
 
@@ -59,11 +69,31 @@ public class MyQueryServiceBenchmarkTest {
                 .mode (Mode.AverageTime)
                 .timeUnit(TimeUnit.MICROSECONDS)
                 .warmupTime(TimeValue.seconds(10))
-                .warmupIterations(2)
-                .measurementTime(TimeValue.seconds(30))
-                .measurementIterations(2)
+                .warmupIterations(1)
+                .measurementTime(TimeValue.seconds(20))
+                .measurementIterations(3)
                 .threads(10)
                 .forks(0)
+                // .forks(1)
+                // .jvmArgs(  "-Xmx16g"
+                //     , "-Xms16g"
+                //     //, "-XX:+UseG1GC"
+                //     , "-XX:+UseParallelGC"
+                //     , "-verbose:gc"
+                //     , "-Xloggc:gc_%p_%t.log"
+                //     , "-XX:+UseGCLogFileRotation"
+                //     , "-XX:NumberOfGCLogFiles=10"
+                //     , "-XX:GCLogFileSize=10M"
+                //     , "-XX:+PrintGCTimeStamps"
+                //     , "-XX:+PrintGCDateStamps"
+                //     , "-XX:+PrintGCDetails"
+                //     , "-XX:+HeapDumpOnOutOfMemoryError"
+                //     , "-XX:ReservedCodeCacheSize=256M"
+                //     , "-XX:+UnlockCommercialFeatures"
+                //     , "-XX:+FlightRecorder"
+                //     , "-XX:FlightRecorderOptions=defaultrecording=true,dumponexit=true"
+                //     , "-Djmh.shutdownTimeout=300"
+                //                         )
                 .shouldFailOnError(true)
                 .shouldDoGC(true)
                 //.jvmArgs("-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintInlining")
